@@ -23,13 +23,13 @@ import { StatsModule } from './modules/stats/stats.module';
     ThrottlerModule.forRoot([
       {
         name: 'short',
-        ttl: 1000,    // 1 秒
-        limit: 10,    // 每秒最多 10 次
+        ttl: 1000, // 1 秒
+        limit: 10, // 每秒最多 10 次
       },
       {
         name: 'medium',
-        ttl: 60000,   // 1 分钟
-        limit: 100,   // 每分钟最多 100 次
+        ttl: 60000, // 1 分钟
+        limit: 100, // 每分钟最多 100 次
       },
     ]),
     PrismaModule,

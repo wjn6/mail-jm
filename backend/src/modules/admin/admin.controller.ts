@@ -1,17 +1,32 @@
 import {
-  Controller, Get, Post, Put, Delete,
-  Body, Param, Query, UseGuards, ParseIntPipe, DefaultValuePipe, Req,
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  ParseIntPipe,
+  DefaultValuePipe,
+  Req,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { Request } from 'express';
 import { AdminService } from './admin.service';
 import { AdminJwtAuthGuard, RolesGuard } from '../../common/guards';
 import { Roles, CurrentUser } from '../../common/decorators';
 import { NotificationGateway } from '../notification/notification.gateway';
 import {
-  CreateUpstreamDto, UpdateUpstreamDto,
-  CreatePricingRuleDto, UpdatePricingRuleDto,
-  CreateAnnouncementDto, UpdateAnnouncementDto,
-  RechargeUserDto, UpdateUserStatusDto,
+  CreateUpstreamDto,
+  UpdateUpstreamDto,
+  CreatePricingRuleDto,
+  UpdatePricingRuleDto,
+  CreateAnnouncementDto,
+  UpdateAnnouncementDto,
+  RechargeUserDto,
+  UpdateUserStatusDto,
   CreateAdminDto,
 } from './dto/admin.dto';
 
@@ -46,10 +61,17 @@ export class AdminController {
     @CurrentUser('id') adminId: number,
     @Param('id', ParseIntPipe) userId: number,
     @Body() dto: UpdateUserStatusDto,
-    @Req() req: any,
+    @Req() req: Request,
   ) {
     const result = await this.adminService.updateUserStatus(userId, dto.status);
-    await this.adminService.logAction(adminId, 'UPDATE_USER_STATUS', 'USER', userId, { status: dto.status }, req.ip);
+    await this.adminService.logAction(
+      adminId,
+      'UPDATE_USER_STATUS',
+      'USER',
+      userId,
+      { status: dto.status },
+      req.ip,
+    );
     return result;
   }
 
@@ -58,10 +80,17 @@ export class AdminController {
     @CurrentUser('id') adminId: number,
     @Param('id', ParseIntPipe) userId: number,
     @Body() dto: RechargeUserDto,
-    @Req() req: any,
+    @Req() req: Request,
   ) {
     const result = await this.adminService.rechargeUser(userId, dto.amount, dto.description);
-    await this.adminService.logAction(adminId, 'RECHARGE_USER', 'USER', userId, { amount: dto.amount }, req.ip);
+    await this.adminService.logAction(
+      adminId,
+      'RECHARGE_USER',
+      'USER',
+      userId,
+      { amount: dto.amount },
+      req.ip,
+    );
     return result;
   }
 
@@ -97,12 +126,19 @@ export class AdminController {
   async createUpstream(
     @CurrentUser('id') adminId: number,
     @Body() dto: CreateUpstreamDto,
-    @Req() req: any,
+    @Req() req: Request,
   ) {
     const result = await this.adminService.createUpstream(dto);
     // 日志中脱敏 apiKey
     const logDetail = { ...dto, apiKey: dto.apiKey ? '****' : undefined };
-    await this.adminService.logAction(adminId, 'CREATE_UPSTREAM', 'UPSTREAM', result.id, logDetail, req.ip);
+    await this.adminService.logAction(
+      adminId,
+      'CREATE_UPSTREAM',
+      'UPSTREAM',
+      result.id,
+      logDetail,
+      req.ip,
+    );
     return result;
   }
 
@@ -111,11 +147,18 @@ export class AdminController {
     @CurrentUser('id') adminId: number,
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateUpstreamDto,
-    @Req() req: any,
+    @Req() req: Request,
   ) {
     const result = await this.adminService.updateUpstream(id, dto);
     const logDetail = { ...dto, apiKey: dto.apiKey ? '****' : undefined };
-    await this.adminService.logAction(adminId, 'UPDATE_UPSTREAM', 'UPSTREAM', id, logDetail, req.ip);
+    await this.adminService.logAction(
+      adminId,
+      'UPDATE_UPSTREAM',
+      'UPSTREAM',
+      id,
+      logDetail,
+      req.ip,
+    );
     return result;
   }
 
@@ -123,7 +166,7 @@ export class AdminController {
   async deleteUpstream(
     @CurrentUser('id') adminId: number,
     @Param('id', ParseIntPipe) id: number,
-    @Req() req: any,
+    @Req() req: Request,
   ) {
     const result = await this.adminService.deleteUpstream(id);
     await this.adminService.logAction(adminId, 'DELETE_UPSTREAM', 'UPSTREAM', id, {}, req.ip);
@@ -159,7 +202,7 @@ export class AdminController {
   async createPricingRule(
     @CurrentUser('id') adminId: number,
     @Body() dto: CreatePricingRuleDto,
-    @Req() req: any,
+    @Req() req: Request,
   ) {
     const result = await this.adminService.createPricingRule(dto);
     await this.adminService.logAction(adminId, 'CREATE_PRICING', 'PRICING', result.id, dto, req.ip);
@@ -171,7 +214,7 @@ export class AdminController {
     @CurrentUser('id') adminId: number,
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdatePricingRuleDto,
-    @Req() req: any,
+    @Req() req: Request,
   ) {
     const result = await this.adminService.updatePricingRule(id, dto);
     await this.adminService.logAction(adminId, 'UPDATE_PRICING', 'PRICING', id, dto, req.ip);
@@ -182,7 +225,7 @@ export class AdminController {
   async deletePricingRule(
     @CurrentUser('id') adminId: number,
     @Param('id', ParseIntPipe) id: number,
-    @Req() req: any,
+    @Req() req: Request,
   ) {
     const result = await this.adminService.deletePricingRule(id);
     await this.adminService.logAction(adminId, 'DELETE_PRICING', 'PRICING', id, {}, req.ip);
@@ -202,12 +245,19 @@ export class AdminController {
   async createAnnouncement(
     @CurrentUser('id') adminId: number,
     @Body() dto: CreateAnnouncementDto,
-    @Req() req: any,
+    @Req() req: Request,
   ) {
     const result = await this.adminService.createAnnouncement(dto);
     // 广播公告
     this.notificationGateway.broadcastAnnouncement({ title: dto.title, content: dto.content });
-    await this.adminService.logAction(adminId, 'CREATE_ANNOUNCEMENT', 'ANNOUNCEMENT', result.id, dto, req.ip);
+    await this.adminService.logAction(
+      adminId,
+      'CREATE_ANNOUNCEMENT',
+      'ANNOUNCEMENT',
+      result.id,
+      dto,
+      req.ip,
+    );
     return result;
   }
 
@@ -216,10 +266,17 @@ export class AdminController {
     @CurrentUser('id') adminId: number,
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateAnnouncementDto,
-    @Req() req: any,
+    @Req() req: Request,
   ) {
     const result = await this.adminService.updateAnnouncement(id, dto);
-    await this.adminService.logAction(adminId, 'UPDATE_ANNOUNCEMENT', 'ANNOUNCEMENT', id, dto, req.ip);
+    await this.adminService.logAction(
+      adminId,
+      'UPDATE_ANNOUNCEMENT',
+      'ANNOUNCEMENT',
+      id,
+      dto,
+      req.ip,
+    );
     return result;
   }
 
@@ -227,10 +284,17 @@ export class AdminController {
   async deleteAnnouncement(
     @CurrentUser('id') adminId: number,
     @Param('id', ParseIntPipe) id: number,
-    @Req() req: any,
+    @Req() req: Request,
   ) {
     const result = await this.adminService.deleteAnnouncement(id);
-    await this.adminService.logAction(adminId, 'DELETE_ANNOUNCEMENT', 'ANNOUNCEMENT', id, {}, req.ip);
+    await this.adminService.logAction(
+      adminId,
+      'DELETE_ANNOUNCEMENT',
+      'ANNOUNCEMENT',
+      id,
+      {},
+      req.ip,
+    );
     return result;
   }
 
@@ -246,10 +310,17 @@ export class AdminController {
   async createAdmin(
     @CurrentUser('id') adminId: number,
     @Body() dto: CreateAdminDto,
-    @Req() req: any,
+    @Req() req: Request,
   ) {
     const result = await this.adminService.createAdmin(dto);
-    await this.adminService.logAction(adminId, 'CREATE_ADMIN', 'ADMIN', result.id, { username: dto.username }, req.ip);
+    await this.adminService.logAction(
+      adminId,
+      'CREATE_ADMIN',
+      'ADMIN',
+      result.id,
+      { username: dto.username },
+      req.ip,
+    );
     return result;
   }
 
@@ -258,7 +329,7 @@ export class AdminController {
   async deleteAdmin(
     @CurrentUser('id') adminId: number,
     @Param('id', ParseIntPipe) id: number,
-    @Req() req: any,
+    @Req() req: Request,
   ) {
     const result = await this.adminService.deleteAdmin(id);
     await this.adminService.logAction(adminId, 'DELETE_ADMIN', 'ADMIN', id, {}, req.ip);

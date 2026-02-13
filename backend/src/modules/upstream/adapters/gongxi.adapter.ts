@@ -14,7 +14,7 @@ export class GongXiAdapter implements IUpstreamAdapter {
   constructor(
     private readonly baseUrl: string,
     private readonly apiKey: string,
-    private readonly config: Record<string, any> = {},
+    private readonly config: Record<string, unknown> = {},
   ) {
     this.client = axios.create({
       baseURL: this.baseUrl,
@@ -97,7 +97,9 @@ export class GongXiAdapter implements IUpstreamAdapter {
     }
   }
 
-  async listEmails(group?: string): Promise<{ email: string; status: string; group: string | null }[]> {
+  async listEmails(
+    group?: string,
+  ): Promise<{ email: string; status: string; group: string | null }[]> {
     try {
       const params: Record<string, string> = {};
       if (group) params.group = group;
@@ -129,13 +131,26 @@ export class GongXiAdapter implements IUpstreamAdapter {
       throw error;
     }
 
-    const err = error as any;
-    const message = err.response?.data?.error?.message
-      || err.response?.data?.message
-      || err.message
-      || `${action}时上游服务异常`;
+    if (axios.isAxiosError(error)) {
+      const responseData = error.response?.data as
+        | { error?: { message?: string }; message?: string }
+        | undefined;
+      const message =
+        responseData?.error?.message ||
+        responseData?.message ||
+        error.message ||
+        `${action}时上游服务异常`;
+      this.logger.error(`GongXi API error [${action}]: ${message}`, error.stack);
+      throw new UpstreamException(message);
+    }
 
-    this.logger.error(`GongXi API error [${action}]: ${message}`, err.stack);
-    throw new UpstreamException(message);
+    if (error instanceof Error) {
+      this.logger.error(`GongXi API error [${action}]: ${error.message}`, error.stack);
+      throw new UpstreamException(error.message);
+    }
+
+    const fallbackMessage = `${action}时上游服务异常`;
+    this.logger.error(`GongXi API error [${action}]: ${fallbackMessage}`);
+    throw new UpstreamException(fallbackMessage);
   }
 }

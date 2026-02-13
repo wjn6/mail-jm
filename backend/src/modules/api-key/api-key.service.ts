@@ -53,7 +53,11 @@ export class ApiKeyService {
     });
   }
 
-  async createApiKey(userId: number, projectId: number, data: { name: string; rateLimit?: number; expiresAt?: string }) {
+  async createApiKey(
+    userId: number,
+    projectId: number,
+    data: { name: string; rateLimit?: number; expiresAt?: string },
+  ) {
     const project = await this.prisma.project.findFirst({
       where: { id: projectId, userId },
     });
@@ -92,7 +96,11 @@ export class ApiKeyService {
     };
   }
 
-  async updateApiKey(userId: number, keyId: number, data: { name?: string; rateLimit?: number; status?: string }) {
+  async updateApiKey(
+    userId: number,
+    keyId: number,
+    data: { name?: string; rateLimit?: number; status?: string },
+  ) {
     const apiKey = await this.prisma.apiKey.findFirst({
       where: { id: keyId },
       include: { project: true },

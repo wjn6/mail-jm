@@ -28,14 +28,20 @@ async function bootstrap() {
     if (nodeEnv === 'production') {
       throw new Error('JWT_SECRET is required and must be at least 32 characters in production.');
     }
-    logger.warn('JWT_SECRET is using a placeholder value. Replace it before production deployment.');
+    logger.warn(
+      'JWT_SECRET is using a placeholder value. Replace it before production deployment.',
+    );
   }
 
   if (!jwtAdminSecret || jwtAdminSecret.includes('your_') || jwtAdminSecret.length < 32) {
     if (nodeEnv === 'production') {
-      throw new Error('JWT_ADMIN_SECRET is required and must be at least 32 characters in production.');
+      throw new Error(
+        'JWT_ADMIN_SECRET is required and must be at least 32 characters in production.',
+      );
     }
-    logger.warn('JWT_ADMIN_SECRET is using a placeholder value. Replace it before production deployment.');
+    logger.warn(
+      'JWT_ADMIN_SECRET is using a placeholder value. Replace it before production deployment.',
+    );
   }
 
   const corsOrigin = configService.get<string>('CORS_ORIGIN');

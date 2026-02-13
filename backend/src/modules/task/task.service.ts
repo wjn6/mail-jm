@@ -3,9 +3,7 @@ import { PrismaService } from '../../common/prisma/prisma.service';
 import { UpstreamService } from '../upstream/upstream.service';
 import { WalletService } from '../wallet/wallet.service';
 import { NotificationGateway } from '../notification/notification.gateway';
-import {
-  BusinessException,
-} from '../../common/exceptions/business.exception';
+import { BusinessException } from '../../common/exceptions/business.exception';
 import { PaginatedResponse } from '../../common/dto';
 import { GetEmailDto, GetCodeDto, CheckMailDto, ReleaseEmailDto } from './dto/task.dto';
 
@@ -27,7 +25,7 @@ export class TaskService {
     const rule = await this.prisma.pricingRule.findFirst({
       where: { isDefault: true, status: 'ACTIVE' },
     });
-    return rule ? Number(rule.price) : 0.10;
+    return rule ? Number(rule.price) : 0.1;
   }
 
   /**
@@ -99,10 +97,12 @@ export class TaskService {
       } catch (deductError) {
         // confirmDeduct 失败时，标记任务为 FAILED 防止产生免费孤儿任务
         this.logger.error(`确认扣费失败, taskId=${task.id}: ${deductError.message}`);
-        await this.prisma.emailTask.update({
-          where: { id: task.id },
-          data: { status: 'FAILED', completedAt: new Date() },
-        }).catch((e) => this.logger.error(`标记任务失败也失败了: ${e.message}`));
+        await this.prisma.emailTask
+          .update({
+            where: { id: task.id },
+            data: { status: 'FAILED', completedAt: new Date() },
+          })
+          .catch((e) => this.logger.error(`标记任务失败也失败了: ${e.message}`));
         throw deductError;
       }
 
@@ -114,7 +114,8 @@ export class TaskService {
       };
     } catch (error) {
       // 获取邮箱失败或扣费失败，解冻费用
-      await this.walletService.unfreeze(userId, unitPrice, '获取邮箱失败 - 退还冻结')
+      await this.walletService
+        .unfreeze(userId, unitPrice, '获取邮箱失败 - 退还冻结')
         .catch((e) => this.logger.error(`解冻费用也失败了: ${e.message}`));
       throw error;
     }
@@ -273,7 +274,7 @@ export class TaskService {
     page = Math.max(1, Math.floor(page) || 1);
     pageSize = Math.min(100, Math.max(1, Math.floor(pageSize) || 20));
 
-    const where: any = { userId };
+    const where: Record<string, unknown> = { userId };
     if (status) where.status = status;
     if (projectId) where.projectId = projectId;
 

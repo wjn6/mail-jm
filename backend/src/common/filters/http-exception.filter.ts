@@ -6,7 +6,13 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
-import { Response } from 'express';
+import { Request, Response } from 'express';
+
+interface ExceptionPayload {
+  message?: string | string[];
+  code?: string;
+  details?: unknown;
+}
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -16,12 +22,12 @@ export class HttpExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
-    const request = ctx.getRequest();
+    const request = ctx.getRequest<Request>();
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = '服务器内部错误';
     let code = 'INTERNAL_ERROR';
-    let details: any = undefined;
+    let details: unknown = undefined;
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
@@ -30,22 +36,25 @@ export class HttpExceptionFilter implements ExceptionFilter {
       if (typeof exResponse === 'string') {
         message = exResponse;
       } else if (typeof exResponse === 'object') {
-        const res = exResponse as any;
-        message = res.message || exception.message;
-        code = res.code || this.getCodeFromStatus(status);
-        details = res.details;
+        const res = exResponse as ExceptionPayload;
+        let resolvedCode = res.code || this.getCodeFromStatus(status);
 
         if (Array.isArray(res.message)) {
           message = res.message.join('; ');
-          code = 'VALIDATION_ERROR';
+          if (!res.code) {
+            resolvedCode = 'VALIDATION_ERROR';
+          }
+        } else if (typeof res.message === 'string') {
+          message = res.message;
+        } else {
+          message = exception.message;
         }
+        code = resolvedCode;
+        details = res.details;
       }
     } else if (exception instanceof Error) {
       // 生产环境不泄露内部错误信息
-      this.logger.error(
-        `Unhandled error: ${exception.message}`,
-        exception.stack,
-      );
+      this.logger.error(`Unhandled error: ${exception.message}`, exception.stack);
       if (!this.isProduction) {
         message = exception.message;
       }

@@ -1,4 +1,13 @@
-import { IsString, IsOptional, IsNumber, IsBoolean, IsIn, MinLength, MaxLength, Min, IsUrl } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsBoolean,
+  IsIn,
+  MinLength,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
@@ -57,7 +66,7 @@ export class CreateUpstreamDto {
 
   @ApiPropertyOptional({ description: '配置' })
   @IsOptional()
-  config?: any;
+  config?: unknown;
 }
 
 export class UpdateUpstreamDto {
@@ -100,7 +109,7 @@ export class UpdateUpstreamDto {
 
   @ApiPropertyOptional({ description: '配置' })
   @IsOptional()
-  config?: any;
+  config?: unknown;
 }
 
 // ===== 计费规则 =====

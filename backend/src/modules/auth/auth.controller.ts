@@ -35,10 +35,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Post('change-password')
-  changePassword(
-    @CurrentUser('id') userId: number,
-    @Body() dto: ChangePasswordDto,
-  ) {
+  changePassword(@CurrentUser('id') userId: number, @Body() dto: ChangePasswordDto) {
     return this.authService.changePassword(userId, dto);
   }
 }

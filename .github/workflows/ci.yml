@@ -6,9 +6,14 @@ on:
       - main
   pull_request:
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build-and-check:
+  backend-quality:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
@@ -24,8 +29,22 @@ jobs:
       - name: Install backend dependencies
         run: npm ci --prefix backend
 
+      - name: Lint backend (budget gate)
+        run: npm run lint:backend:budget
+
       - name: Build backend
         run: npm run build --prefix backend
+
+      - name: Test backend
+        run: npm run test:ci --prefix backend
+
+  frontend-quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -42,6 +61,9 @@ jobs:
 
       - name: Install frontend dependencies
         run: pnpm --dir frontend install --frozen-lockfile
+
+      - name: Lint frontend
+        run: pnpm --dir frontend lint
 
       - name: Run frontend basic tests
         run: pnpm --dir frontend test:basic

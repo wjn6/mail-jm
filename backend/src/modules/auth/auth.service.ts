@@ -1,14 +1,14 @@
-import {
-  Injectable,
-  UnauthorizedException,
-  ConflictException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { RegisterDto, LoginDto, ChangePasswordDto, AdminLoginDto } from './dto/auth.dto';
+
+interface PrismaUniqueErrorShape {
+  code: string;
+  meta?: { target?: unknown };
+}
 
 @Injectable()
 export class AuthService {
@@ -21,6 +21,15 @@ export class AuthService {
   ) {}
 
   // ========== 用户认证 ==========
+
+  private isPrismaUniqueError(error: unknown): error is PrismaUniqueErrorShape {
+    return (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      typeof (error as { code: unknown }).code === 'string'
+    );
+  }
 
   async register(dto: RegisterDto) {
     // 检查用户名是否已存在
@@ -71,9 +80,9 @@ export class AuthService {
           email: user.email,
         },
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       // 捕获 Prisma 唯一约束冲突（并发注册场景）
-      if (error.code === 'P2002') {
+      if (this.isPrismaUniqueError(error) && error.code === 'P2002') {
         const target = error.meta?.target;
         const field = Array.isArray(target) && target.includes('username') ? '用户名' : '邮箱';
         throw new ConflictException(`${field}已存在`);

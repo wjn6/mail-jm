@@ -1,6 +1,13 @@
 import {
-  Controller, Get, Post, Put, Delete,
-  Body, Param, UseGuards, ParseIntPipe,
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  UseGuards,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { ApiKeyService } from './api-key.service';
@@ -42,10 +49,7 @@ export class ApiKeyController {
   }
 
   @Delete(':keyId')
-  deleteApiKey(
-    @CurrentUser('id') userId: number,
-    @Param('keyId', ParseIntPipe) keyId: number,
-  ) {
+  deleteApiKey(@CurrentUser('id') userId: number, @Param('keyId', ParseIntPipe) keyId: number) {
     return this.apiKeyService.deleteApiKey(userId, keyId);
   }
 }

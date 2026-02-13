@@ -12,15 +12,16 @@ import { ConfigService } from '@nestjs/config';
 
 @WebSocketGateway({
   cors: {
-    origin: process.env.NODE_ENV === 'production'
-      ? (process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : false)
-      : '*',
+    origin:
+      process.env.NODE_ENV === 'production'
+        ? process.env.CORS_ORIGIN
+          ? process.env.CORS_ORIGIN.split(',')
+          : false
+        : '*',
   },
   namespace: '/ws',
 })
-export class NotificationGateway
-  implements OnGatewayConnection, OnGatewayDisconnect
-{
+export class NotificationGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server: Server;
   private readonly logger = new Logger(NotificationGateway.name);
   private userSockets: Map<number, Set<string>> = new Map();
@@ -86,7 +87,10 @@ export class NotificationGateway
   /**
    * 推送新邮件通知
    */
-  notifyNewMail(userId: number, data: { taskId: number; email: string; code?: string; subject?: string }) {
+  notifyNewMail(
+    userId: number,
+    data: { taskId: number; email: string; code?: string; subject?: string },
+  ) {
     this.server.to(`user:${userId}`).emit('newMail', data);
   }
 
@@ -112,7 +116,7 @@ export class NotificationGateway
   }
 
   @SubscribeMessage('ping')
-  handlePing(client: Socket) {
+  handlePing() {
     return { event: 'pong', data: { time: Date.now() } };
   }
 }

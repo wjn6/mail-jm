@@ -6,6 +6,11 @@ import {
 } from '../../common/exceptions/business.exception';
 import { PaginatedResponse } from '../../common/dto';
 
+interface WalletRow {
+  balance: string | number;
+  frozen_balance: string | number;
+}
+
 @Injectable()
 export class WalletService {
   private readonly logger = new Logger(WalletService.name);
@@ -31,7 +36,7 @@ export class WalletService {
   async freeze(userId: number, amount: number, description: string): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
       // 使用行锁查询钱包
-      const wallets = await tx.$queryRaw<any[]>`
+      const wallets = await tx.$queryRaw<WalletRow[]>`
         SELECT * FROM wallets WHERE user_id = ${userId} FOR UPDATE
       `;
 
@@ -83,7 +88,7 @@ export class WalletService {
     taskId?: number,
   ): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
-      const wallets = await tx.$queryRaw<any[]>`
+      const wallets = await tx.$queryRaw<WalletRow[]>`
         SELECT * FROM wallets WHERE user_id = ${userId} FOR UPDATE
       `;
 
@@ -133,7 +138,7 @@ export class WalletService {
    */
   async unfreeze(userId: number, amount: number, description: string): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
-      const wallets = await tx.$queryRaw<any[]>`
+      const wallets = await tx.$queryRaw<WalletRow[]>`
         SELECT * FROM wallets WHERE user_id = ${userId} FOR UPDATE
       `;
 
@@ -147,7 +152,9 @@ export class WalletService {
       // 防止冻结余额变成负数
       const unfreezeAmount = Math.min(amount, frozenBalance);
       if (unfreezeAmount <= 0) {
-        this.logger.warn(`解冻金额异常: userId=${userId}, amount=${amount}, frozenBalance=${frozenBalance}`);
+        this.logger.warn(
+          `解冻金额异常: userId=${userId}, amount=${amount}, frozenBalance=${frozenBalance}`,
+        );
         return;
       }
 
@@ -184,7 +191,7 @@ export class WalletService {
     }
 
     await this.prisma.$transaction(async (tx) => {
-      const wallets = await tx.$queryRaw<any[]>`
+      const wallets = await tx.$queryRaw<WalletRow[]>`
         SELECT * FROM wallets WHERE user_id = ${userId} FOR UPDATE
       `;
 
@@ -226,7 +233,7 @@ export class WalletService {
     taskId?: number,
   ): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
-      const wallets = await tx.$queryRaw<any[]>`
+      const wallets = await tx.$queryRaw<WalletRow[]>`
         SELECT * FROM wallets WHERE user_id = ${userId} FOR UPDATE
       `;
 
@@ -258,17 +265,12 @@ export class WalletService {
     });
   }
 
-  async getTransactions(
-    userId: number,
-    page: number = 1,
-    pageSize: number = 20,
-    type?: string,
-  ) {
+  async getTransactions(userId: number, page: number = 1, pageSize: number = 20, type?: string) {
     // 确保参数合法
     page = Math.max(1, Math.floor(page) || 1);
     pageSize = Math.min(100, Math.max(1, Math.floor(pageSize) || 20));
 
-    const where: any = { userId };
+    const where: Record<string, unknown> = { userId };
     if (type) where.type = type;
 
     const [items, total] = await Promise.all([

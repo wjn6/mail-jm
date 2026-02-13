@@ -30,7 +30,7 @@ export class AdminService {
 
   async getUsers(page: number, pageSize: number, keyword?: string, status?: string) {
     ({ page, pageSize } = this.sanitizePagination(page, pageSize));
-    const where: any = {};
+    const where: Record<string, unknown> = {};
     if (keyword) {
       where.OR = [
         { username: { contains: keyword, mode: 'insensitive' } },
@@ -53,7 +53,11 @@ export class AdminService {
       this.prisma.user.count({ where }),
     ]);
 
-    const safeItems = items.map(({ passwordHash, ...rest }) => rest);
+    const safeItems = items.map((item) => {
+      const { passwordHash, ...safeUser } = item;
+      void passwordHash;
+      return safeUser;
+    });
     return new PaginatedResponse(safeItems, total, page, pageSize);
   }
 
@@ -68,13 +72,17 @@ export class AdminService {
     });
     if (!user) throw new BusinessException('USER_NOT_FOUND', '用户不存在');
     const { passwordHash, ...safeUser } = user;
+    void passwordHash;
     return safeUser;
   }
 
   async updateUserStatus(userId: number, status: string) {
     const validStatuses = ['ACTIVE', 'DISABLED'];
     if (!validStatuses.includes(status)) {
-      throw new BusinessException('INVALID_STATUS', `无效的状态值，允许值: ${validStatuses.join(', ')}`);
+      throw new BusinessException(
+        'INVALID_STATUS',
+        `无效的状态值，允许值: ${validStatuses.join(', ')}`,
+      );
     }
 
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
@@ -99,22 +107,27 @@ export class AdminService {
 
   // ========== 订单管理 ==========
 
-  async getOrders(page: number, pageSize: number, filters: {
-    status?: string;
-    userId?: number;
-    email?: string;
-    startDate?: string;
-    endDate?: string;
-  }) {
+  async getOrders(
+    page: number,
+    pageSize: number,
+    filters: {
+      status?: string;
+      userId?: number;
+      email?: string;
+      startDate?: string;
+      endDate?: string;
+    },
+  ) {
     ({ page, pageSize } = this.sanitizePagination(page, pageSize));
-    const where: any = {};
+    const where: Record<string, unknown> = {};
     if (filters.status) where.status = filters.status;
     if (filters.userId) where.userId = filters.userId;
     if (filters.email) where.email = { contains: filters.email, mode: 'insensitive' };
     if (filters.startDate || filters.endDate) {
-      where.createdAt = {};
-      if (filters.startDate) where.createdAt.gte = new Date(filters.startDate);
-      if (filters.endDate) where.createdAt.lte = new Date(filters.endDate);
+      const createdAt: { gte?: Date; lte?: Date } = {};
+      if (filters.startDate) createdAt.gte = new Date(filters.startDate);
+      if (filters.endDate) createdAt.lte = new Date(filters.endDate);
+      where.createdAt = createdAt;
     }
 
     const [items, total] = await Promise.all([
@@ -153,7 +166,7 @@ export class AdminService {
     baseUrl: string;
     apiKey: string;
     priority?: number;
-    config?: any;
+    config?: unknown;
   }) {
     const upstream = await this.prisma.upstreamSource.create({
       data: {
@@ -170,15 +183,18 @@ export class AdminService {
     return upstream;
   }
 
-  async updateUpstream(id: number, data: {
-    name?: string;
-    type?: string;
-    baseUrl?: string;
-    apiKey?: string;
-    status?: string;
-    priority?: number;
-    config?: any;
-  }) {
+  async updateUpstream(
+    id: number,
+    data: {
+      name?: string;
+      type?: string;
+      baseUrl?: string;
+      apiKey?: string;
+      status?: string;
+      priority?: number;
+      config?: unknown;
+    },
+  ) {
     // 检查记录是否存在
     const existing = await this.prisma.upstreamSource.findUnique({ where: { id } });
     if (!existing) {
@@ -186,7 +202,7 @@ export class AdminService {
     }
 
     // 只允许更新白名单字段
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     if (data.name !== undefined) updateData.name = data.name;
     if (data.type !== undefined) updateData.type = data.type;
     if (data.baseUrl !== undefined) updateData.baseUrl = data.baseUrl;
@@ -297,14 +313,17 @@ export class AdminService {
     });
   }
 
-  async updatePricingRule(id: number, data: {
-    name?: string;
-    type?: string;
-    price?: number;
-    description?: string;
-    isDefault?: boolean;
-    status?: string;
-  }) {
+  async updatePricingRule(
+    id: number,
+    data: {
+      name?: string;
+      type?: string;
+      price?: number;
+      description?: string;
+      isDefault?: boolean;
+      status?: string;
+    },
+  ) {
     const existing = await this.prisma.pricingRule.findUnique({ where: { id } });
     if (!existing) {
       throw new BusinessException('PRICING_NOT_FOUND', '计费规则不存在');
@@ -327,7 +346,10 @@ export class AdminService {
       throw new BusinessException('PRICING_NOT_FOUND', '计费规则不存在');
     }
     if (rule.isDefault) {
-      throw new BusinessException('CANNOT_DELETE_DEFAULT', '不能删除默认计费规则，请先设置其他规则为默认');
+      throw new BusinessException(
+        'CANNOT_DELETE_DEFAULT',
+        '不能删除默认计费规则，请先设置其他规则为默认',
+      );
     }
     await this.prisma.pricingRule.delete({ where: { id } });
     return { message: '计费规则已删除' };
@@ -356,13 +378,16 @@ export class AdminService {
     return this.prisma.announcement.create({ data });
   }
 
-  async updateAnnouncement(id: number, data: {
-    title?: string;
-    content?: string;
-    type?: string;
-    status?: string;
-    pinned?: boolean;
-  }) {
+  async updateAnnouncement(
+    id: number,
+    data: {
+      title?: string;
+      content?: string;
+      type?: string;
+      status?: string;
+      pinned?: boolean;
+    },
+  ) {
     const existing = await this.prisma.announcement.findUnique({ where: { id } });
     if (!existing) {
       throw new BusinessException('ANNOUNCEMENT_NOT_FOUND', '公告不存在');
@@ -417,7 +442,14 @@ export class AdminService {
 
   // ========== 操作日志 ==========
 
-  async logAction(adminId: number, action: string, targetType?: string, targetId?: number, detail?: any, ip?: string) {
+  async logAction(
+    adminId: number,
+    action: string,
+    targetType?: string,
+    targetId?: number,
+    detail?: unknown,
+    ip?: string,
+  ) {
     await this.prisma.adminLog.create({
       data: { adminId, action, targetType, targetId, detail, ip },
     });

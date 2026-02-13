@@ -8,11 +8,7 @@ import { AdminJwtStrategy } from './strategies/admin-jwt.strategy';
 import { PrismaModule } from '../../common/prisma/prisma.module';
 
 @Module({
-  imports: [
-    PassportModule,
-    JwtModule.register({}),
-    PrismaModule,
-  ],
+  imports: [PassportModule, JwtModule.register({}), PrismaModule],
   controllers: [AuthController, AdminAuthController],
   providers: [AuthService, JwtStrategy, AdminJwtStrategy],
   exports: [AuthService, JwtModule],

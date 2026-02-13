@@ -4,6 +4,13 @@ import { IUpstreamAdapter } from './interfaces/upstream-adapter.interface';
 import { GongXiAdapter } from './adapters/gongxi.adapter';
 import { UpstreamException } from '../../common/exceptions/business.exception';
 
+interface UpstreamSourceRecord {
+  type: string;
+  baseUrl: string;
+  apiKey: string;
+  config: unknown;
+}
+
 @Injectable()
 export class UpstreamService implements OnModuleInit {
   private readonly logger = new Logger(UpstreamService.name);
@@ -39,17 +46,24 @@ export class UpstreamService implements OnModuleInit {
   /**
    * 根据上游源创建适配器实例
    */
-  private createAdapter(source: any): IUpstreamAdapter {
+  private createAdapter(source: UpstreamSourceRecord): IUpstreamAdapter {
     switch (source.type) {
       case 'gongxi':
         return new GongXiAdapter(
           source.baseUrl,
           source.apiKey,
-          source.config as Record<string, any>,
+          this.normalizeConfig(source.config),
         );
       default:
         throw new Error(`Unknown upstream type: ${source.type}`);
     }
+  }
+
+  private normalizeConfig(config: unknown): Record<string, unknown> {
+    if (config && typeof config === 'object' && !Array.isArray(config)) {
+      return config as Record<string, unknown>;
+    }
+    return {};
   }
 
   /**

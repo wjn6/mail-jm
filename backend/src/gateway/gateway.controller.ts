@@ -1,8 +1,20 @@
-import { Controller, Get, Post, Query, Body, UseGuards, Req, BadRequestException, ParseIntPipe, DefaultValuePipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Query,
+  Body,
+  UseGuards,
+  Req,
+  BadRequestException,
+  ParseIntPipe,
+  DefaultValuePipe,
+} from '@nestjs/common';
 import { ApiTags, ApiSecurity } from '@nestjs/swagger';
 import { ApiKeyGuard } from './api-key.guard';
 import { TaskService } from '../modules/task/task.service';
 import { WalletService } from '../modules/wallet/wallet.service';
+import { AuthenticatedApiGatewayRequest } from './gateway.types';
 
 @ApiTags('Gateway API (对外接口)')
 @ApiSecurity('api-key')
@@ -19,7 +31,7 @@ export class GatewayController {
    */
   @Get('get-email')
   @Post('get-email')
-  async getEmail(@Req() req: any, @Query('group') group?: string) {
+  async getEmail(@Req() req: AuthenticatedApiGatewayRequest, @Query('group') group?: string) {
     const { userId, projectId, apiKeyId } = req.apiKeyUser;
     return this.taskService.getEmail(userId, { projectId, group }, apiKeyId);
   }
@@ -30,7 +42,7 @@ export class GatewayController {
   @Get('get-code')
   @Post('get-code')
   async getCode(
-    @Req() req: any,
+    @Req() req: AuthenticatedApiGatewayRequest,
     @Query('email') queryEmail?: string,
     @Query('match') queryMatch?: string,
     @Body() body?: { email?: string; match?: string },
@@ -52,7 +64,7 @@ export class GatewayController {
   @Get('check-mail')
   @Post('check-mail')
   async checkMail(
-    @Req() req: any,
+    @Req() req: AuthenticatedApiGatewayRequest,
     @Query('email') queryEmail?: string,
     @Query('mailbox') queryMailbox?: string,
     @Body() body?: { email?: string; mailbox?: string },
@@ -73,7 +85,7 @@ export class GatewayController {
    */
   @Post('release')
   async releaseEmail(
-    @Req() req: any,
+    @Req() req: AuthenticatedApiGatewayRequest,
     @Query('email') queryEmail?: string,
     @Body() body?: { email?: string },
   ) {
@@ -91,7 +103,7 @@ export class GatewayController {
    * 查询余额
    */
   @Get('balance')
-  async getBalance(@Req() req: any) {
+  async getBalance(@Req() req: AuthenticatedApiGatewayRequest) {
     const { userId } = req.apiKeyUser;
     const wallet = await this.walletService.getWallet(userId);
     return {
@@ -105,7 +117,7 @@ export class GatewayController {
    */
   @Get('tasks')
   async getTasks(
-    @Req() req: any,
+    @Req() req: AuthenticatedApiGatewayRequest,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('pageSize', new DefaultValuePipe(20), ParseIntPipe) pageSize: number,
     @Query('status') status?: string,

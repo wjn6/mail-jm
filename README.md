@@ -97,6 +97,16 @@ pnpm dev
 - **管理员**: admin / admin123456
 - **用户**: 自行注册
 
+## 质量控制
+
+```bash
+# 一键质量检查（lint + build + basic tests）
+npm run quality
+
+# 后端 lint（不允许新增 warning）
+npm run lint:backend:budget
+```
+
 ## 目录结构
 
 ```

@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict'
-import { createPaginationBindings, usePagination } from '../src/app/email-platform/composables/use-pagination'
+import {
+  createPaginationBindings,
+  usePagination
+} from '../src/app/email-platform/composables/use-pagination'
 import { runAction } from '../src/app/email-platform/utils/action'
 
 async function testRunAction() {

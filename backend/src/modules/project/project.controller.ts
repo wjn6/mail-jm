@@ -1,6 +1,13 @@
 import {
-  Controller, Get, Post, Put, Delete,
-  Body, Param, UseGuards, ParseIntPipe,
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  UseGuards,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { ProjectService } from './project.service';
@@ -21,18 +28,12 @@ export class ProjectController {
   }
 
   @Get(':id')
-  getProject(
-    @CurrentUser('id') userId: number,
-    @Param('id', ParseIntPipe) projectId: number,
-  ) {
+  getProject(@CurrentUser('id') userId: number, @Param('id', ParseIntPipe) projectId: number) {
     return this.projectService.getProject(userId, projectId);
   }
 
   @Post()
-  createProject(
-    @CurrentUser('id') userId: number,
-    @Body() dto: CreateProjectDto,
-  ) {
+  createProject(@CurrentUser('id') userId: number, @Body() dto: CreateProjectDto) {
     return this.projectService.createProject(userId, dto.name);
   }
 
@@ -46,10 +47,7 @@ export class ProjectController {
   }
 
   @Delete(':id')
-  deleteProject(
-    @CurrentUser('id') userId: number,
-    @Param('id', ParseIntPipe) projectId: number,
-  ) {
+  deleteProject(@CurrentUser('id') userId: number, @Param('id', ParseIntPipe) projectId: number) {
     return this.projectService.deleteProject(userId, projectId);
   }
 }
