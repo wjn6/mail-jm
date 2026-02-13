@@ -55,8 +55,8 @@ export class UpstreamService implements OnModuleInit {
   /**
    * 获取最优先的适配器
    */
-  async getAdapter(upstreamId?: number): Promise<{ id: number; adapter: IUpstreamAdapter }> {
-    if (upstreamId && this.adapters.has(upstreamId)) {
+  async getAdapter(upstreamId?: number | null): Promise<{ id: number; adapter: IUpstreamAdapter }> {
+    if (upstreamId !== null && upstreamId !== undefined && this.adapters.has(upstreamId)) {
       const adapter = this.adapters.get(upstreamId);
       if (adapter) {
         return { id: upstreamId, adapter };
