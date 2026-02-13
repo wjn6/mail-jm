@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import {
   InsufficientBalanceException,
@@ -65,9 +64,9 @@ export class WalletService {
         data: {
           userId,
           type: 'FREEZE',
-          amount: new Prisma.Decimal(-amount),
-          balanceBefore: new Prisma.Decimal(balance),
-          balanceAfter: new Prisma.Decimal(balance),
+          amount: -amount,
+          balanceBefore: balance,
+          balanceAfter: balance,
           description,
         },
       });
@@ -119,9 +118,9 @@ export class WalletService {
         data: {
           userId,
           type: 'CONSUME',
-          amount: new Prisma.Decimal(-amount),
-          balanceBefore: new Prisma.Decimal(balanceBefore),
-          balanceAfter: new Prisma.Decimal(balanceAfter),
+          amount: -amount,
+          balanceBefore: balanceBefore,
+          balanceAfter: balanceAfter,
           description,
           relatedTaskId: taskId,
         },
@@ -162,9 +161,9 @@ export class WalletService {
         data: {
           userId,
           type: 'UNFREEZE',
-          amount: new Prisma.Decimal(unfreezeAmount),
-          balanceBefore: new Prisma.Decimal(Number(wallet.balance)),
-          balanceAfter: new Prisma.Decimal(Number(wallet.balance)),
+          amount: unfreezeAmount,
+          balanceBefore: Number(wallet.balance),
+          balanceAfter: Number(wallet.balance),
           description,
         },
       });
@@ -207,9 +206,9 @@ export class WalletService {
         data: {
           userId,
           type: 'RECHARGE',
-          amount: new Prisma.Decimal(amount),
-          balanceBefore: new Prisma.Decimal(balanceBefore),
-          balanceAfter: new Prisma.Decimal(balanceAfter),
+          amount: amount,
+          balanceBefore: balanceBefore,
+          balanceAfter: balanceAfter,
           description,
           refNo,
         },
@@ -249,9 +248,9 @@ export class WalletService {
         data: {
           userId,
           type: 'REFUND',
-          amount: new Prisma.Decimal(amount),
-          balanceBefore: new Prisma.Decimal(balanceBefore),
-          balanceAfter: new Prisma.Decimal(balanceAfter),
+          amount: amount,
+          balanceBefore: balanceBefore,
+          balanceAfter: balanceAfter,
           description,
           relatedTaskId: taskId,
         },

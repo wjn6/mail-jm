@@ -56,13 +56,14 @@ export class TaskController {
     @Query('status') status?: string,
     @Query('projectId') projectId?: string,
   ) {
-    const parsedProjectId = projectId ? parseInt(projectId, 10) : undefined;
+    const parsedProjectId = projectId ? Number.parseInt(projectId, 10) : Number.NaN;
+    const normalizedProjectId = Number.isNaN(parsedProjectId) ? undefined : parsedProjectId;
     return this.taskService.getTasks(
       userId,
       page,
       pageSize,
       status,
-      !isNaN(parsedProjectId) ? parsedProjectId : undefined,
+      normalizedProjectId,
     );
   }
 

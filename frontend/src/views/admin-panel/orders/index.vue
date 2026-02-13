@@ -74,7 +74,10 @@
 
 <script setup lang="ts">
   import { fetchAdminOrders } from '@/api/admin'
-  import { usePagination } from '@/app/email-platform/composables/use-pagination'
+  import {
+    createPaginationBindings,
+    usePagination
+  } from '@/app/email-platform/composables/use-pagination'
   import {
     getTaskStatusTagType,
     getTaskStatusText
@@ -89,19 +92,7 @@
   const filters = reactive({ email: '', status: '' })
 
   const { pagination, setTotal } = usePagination(20)
-  const page = computed({
-    get: () => pagination.page,
-    set: (value: number) => {
-      pagination.page = value
-    }
-  })
-  const pageSize = computed({
-    get: () => pagination.pageSize,
-    set: (value: number) => {
-      pagination.pageSize = value
-    }
-  })
-  const total = computed(() => pagination.total)
+  const { page, pageSize, total } = createPaginationBindings(pagination)
 
   const getStatusType = (status: string) => getTaskStatusTagType(status)
   const getStatusText = (status: string) => getTaskStatusText(status)

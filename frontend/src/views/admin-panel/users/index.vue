@@ -109,11 +109,14 @@
 </template>
 
 <script setup lang="ts">
-  import { ElMessage, ElMessageBox } from 'element-plus'
+  import { ElMessage } from 'element-plus'
   import { fetchAdminUsers, fetchRechargeUser, fetchUpdateUserStatus } from '@/api/admin'
-  import { usePagination } from '@/app/email-platform/composables/use-pagination'
+  import {
+    createPaginationBindings,
+    usePagination
+  } from '@/app/email-platform/composables/use-pagination'
   import { formatDateTime } from '@/app/email-platform/utils/format'
-  import { isActionCancelled, showApiError } from '@/app/email-platform/utils/message'
+  import { runConfirmAction, showApiError } from '@/app/email-platform/utils/message'
 
   defineOptions({ name: 'AdminUsers' })
 
@@ -123,19 +126,7 @@
   const statusFilter = ref<Api.Admin.UserStatus | ''>('')
 
   const { pagination, setTotal } = usePagination(20)
-  const page = computed({
-    get: () => pagination.page,
-    set: (value: number) => {
-      pagination.page = value
-    }
-  })
-  const pageSize = computed({
-    get: () => pagination.pageSize,
-    set: (value: number) => {
-      pagination.pageSize = value
-    }
-  })
-  const total = computed(() => pagination.total)
+  const { page, pageSize, total } = createPaginationBindings(pagination)
 
   const rechargeDialogVisible = ref(false)
   const rechargeTarget = ref<Api.Admin.UserItem | null>(null)
@@ -167,18 +158,15 @@
     const newStatus: Api.Admin.UserStatus = user.status === 'ACTIVE' ? 'DISABLED' : 'ACTIVE'
     const action = newStatus === 'DISABLED' ? '禁用' : '启用'
 
-    try {
-      await ElMessageBox.confirm(`确定${action}用户 ${user.username}？`, '确认', {
-        type: 'warning'
-      })
-      await fetchUpdateUserStatus(user.id, newStatus)
-      ElMessage.success(`已${action}`)
-      await loadUsers()
-    } catch (error) {
-      if (!isActionCancelled(error)) {
-        showApiError(error, `${action}失败`)
+    await runConfirmAction({
+      message: `确定${action}用户 ${user.username}？`,
+      errorMessage: `${action}失败`,
+      successMessage: `已${action}`,
+      onConfirm: async () => {
+        await fetchUpdateUserStatus(user.id, newStatus)
+        await loadUsers()
       }
-    }
+    })
   }
 
   const showRechargeDialog = (user: Api.Admin.UserItem) => {

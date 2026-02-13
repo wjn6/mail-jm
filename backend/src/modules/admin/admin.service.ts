@@ -89,7 +89,7 @@ export class AdminService {
     return { message: '用户状态已更新' };
   }
 
-  async rechargeUser(userId: number, amount: number, description: string) {
+  async rechargeUser(userId: number, amount: number, description?: string) {
     if (!amount || amount <= 0) {
       throw new BusinessException('INVALID_AMOUNT', '充值金额必须大于 0');
     }

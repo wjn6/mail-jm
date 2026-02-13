@@ -8,7 +8,6 @@ import {
 } from '../../common/exceptions/business.exception';
 import { PaginatedResponse } from '../../common/dto';
 import { GetEmailDto, GetCodeDto, CheckMailDto, ReleaseEmailDto } from './dto/task.dto';
-import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class TaskService {
@@ -83,7 +82,7 @@ export class TaskService {
           upstreamId,
           email: emailResult.email,
           status: 'ACTIVE',
-          cost: new Prisma.Decimal(unitPrice),
+          cost: unitPrice,
           upstreamEmail: emailResult.email,
           expireAt: new Date(Date.now() + 30 * 60 * 1000), // 30 分钟过期
         },
@@ -221,8 +220,8 @@ export class TaskService {
 
     return {
       taskId: task.id,
-      email: task.email,
       ...mailResult,
+      email: task.email,
     };
   }
 

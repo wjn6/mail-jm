@@ -94,7 +94,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ElMessage, ElMessageBox } from 'element-plus'
+  import { ElMessage } from 'element-plus'
   import {
     fetchCreateProject,
     fetchDeleteProject,
@@ -102,7 +102,7 @@
     fetchUpdateProject
   } from '@/api/project'
   import { formatDate } from '@/app/email-platform/utils/format'
-  import { isActionCancelled, showApiError } from '@/app/email-platform/utils/message'
+  import { runConfirmAction, showApiError } from '@/app/email-platform/utils/message'
 
   defineOptions({ name: 'ProjectList' })
 
@@ -160,18 +160,15 @@
   }
 
   const deleteProject = async (id: number) => {
-    try {
-      await ElMessageBox.confirm('确定删除该项目？关联的 API Key 也会一并删除', '确认', {
-        type: 'warning'
-      })
-      await fetchDeleteProject(id)
-      ElMessage.success('项目已删除')
-      await loadProjects()
-    } catch (error) {
-      if (!isActionCancelled(error)) {
-        showApiError(error, '删除项目失败')
+    await runConfirmAction({
+      message: '确定删除该项目？关联的 API Key 也会一并删除',
+      errorMessage: '删除项目失败',
+      successMessage: '项目已删除',
+      onConfirm: async () => {
+        await fetchDeleteProject(id)
+        await loadProjects()
       }
-    }
+    })
   }
 
   onMounted(loadProjects)

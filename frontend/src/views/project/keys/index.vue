@@ -99,7 +99,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ElMessage, ElMessageBox } from 'element-plus'
+  import { ElMessage } from 'element-plus'
   import {
     fetchApiKeys,
     fetchCreateApiKey,
@@ -108,7 +108,7 @@
     fetchUpdateApiKey
   } from '@/api/project'
   import { formatDateTime } from '@/app/email-platform/utils/format'
-  import { isActionCancelled, showApiError } from '@/app/email-platform/utils/message'
+  import { runConfirmAction, showApiError } from '@/app/email-platform/utils/message'
 
   defineOptions({ name: 'ProjectKeys' })
 
@@ -189,16 +189,15 @@
   }
 
   const handleDelete = async (keyId: number) => {
-    try {
-      await ElMessageBox.confirm('确定删除此 API Key？', '确认', { type: 'warning' })
-      await fetchDeleteApiKey(projectId.value, keyId)
-      ElMessage.success('已删除')
-      await loadKeys()
-    } catch (error) {
-      if (!isActionCancelled(error)) {
-        showApiError(error, '删除失败')
+    await runConfirmAction({
+      message: '确定删除此 API Key？',
+      errorMessage: '删除失败',
+      successMessage: '已删除',
+      onConfirm: async () => {
+        await fetchDeleteApiKey(projectId.value, keyId)
+        await loadKeys()
       }
-    }
+    })
   }
 
   const copyKey = async () => {

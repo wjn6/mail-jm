@@ -52,7 +52,12 @@ export class NotificationGateway
       if (!this.userSockets.has(userId)) {
         this.userSockets.set(userId, new Set());
       }
-      this.userSockets.get(userId).add(client.id);
+      const sockets = this.userSockets.get(userId);
+      if (!sockets) {
+        client.disconnect();
+        return;
+      }
+      sockets.add(client.id);
 
       client.join(`user:${userId}`);
       this.logger.log(`User ${userId} connected (${client.id})`);
@@ -65,8 +70,13 @@ export class NotificationGateway
   handleDisconnect(client: Socket) {
     const userId = client.data?.userId;
     if (userId && this.userSockets.has(userId)) {
-      this.userSockets.get(userId).delete(client.id);
-      if (this.userSockets.get(userId).size === 0) {
+      const sockets = this.userSockets.get(userId);
+      if (!sockets) {
+        return;
+      }
+
+      sockets.delete(client.id);
+      if (sockets.size === 0) {
         this.userSockets.delete(userId);
       }
     }

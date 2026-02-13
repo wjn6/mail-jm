@@ -76,10 +76,11 @@ export class AdminController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ) {
-    const parsedUserId = userId ? parseInt(userId, 10) : undefined;
+    const parsedUserId = userId ? Number.parseInt(userId, 10) : Number.NaN;
+    const normalizedUserId = Number.isNaN(parsedUserId) ? undefined : parsedUserId;
     return this.adminService.getOrders(page, pageSize, {
       status,
-      userId: !isNaN(parsedUserId) ? parsedUserId : undefined,
+      userId: normalizedUserId,
       email,
       startDate,
       endDate,

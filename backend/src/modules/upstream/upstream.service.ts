@@ -57,7 +57,10 @@ export class UpstreamService implements OnModuleInit {
    */
   async getAdapter(upstreamId?: number): Promise<{ id: number; adapter: IUpstreamAdapter }> {
     if (upstreamId && this.adapters.has(upstreamId)) {
-      return { id: upstreamId, adapter: this.adapters.get(upstreamId) };
+      const adapter = this.adapters.get(upstreamId);
+      if (adapter) {
+        return { id: upstreamId, adapter };
+      }
     }
 
     // 获取优先级最高的活跃适配器
@@ -68,7 +71,10 @@ export class UpstreamService implements OnModuleInit {
 
     for (const source of sources) {
       if (this.adapters.has(source.id)) {
-        return { id: source.id, adapter: this.adapters.get(source.id) };
+        const adapter = this.adapters.get(source.id);
+        if (adapter) {
+          return { id: source.id, adapter };
+        }
       }
     }
 
@@ -97,7 +103,7 @@ export class UpstreamService implements OnModuleInit {
       where: { status: 'ACTIVE' },
     });
 
-    const results = [];
+    const results: { id: number; name: string; healthy: boolean }[] = [];
     for (const source of sources) {
       const adapter = this.adapters.get(source.id);
       let healthy = false;

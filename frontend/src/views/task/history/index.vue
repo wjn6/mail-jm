@@ -10,7 +10,7 @@
               placeholder="状态筛选"
               clearable
               style="width: 140px"
-              @change="loadTasks"
+              @change="handleStatusChange"
             >
               <el-option label="进行中" value="ACTIVE" />
               <el-option label="已完成" value="COMPLETED" />
@@ -19,7 +19,8 @@
               <el-option label="失败" value="FAILED" />
             </el-select>
             <el-button @click="loadTasks" :loading="loading">
-              <i class="ri-refresh-line mr-1"></i> 刷新
+              <i class="ri-refresh-line mr-1"></i>
+              刷新
             </el-button>
           </div>
         </div>
@@ -30,9 +31,9 @@
         <el-table-column prop="email" label="邮箱" min-width="200" show-overflow-tooltip />
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }">
-            <el-tag :type="getStatusType(row.status)" size="small">{{
-              getStatusText(row.status)
-            }}</el-tag>
+            <el-tag :type="getStatusType(row.status)" size="small">
+              {{ getStatusText(row.status) }}
+            </el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="verifyCode" label="验证码" width="120">
@@ -48,7 +49,7 @@
           </template>
         </el-table-column>
         <el-table-column prop="cost" label="费用" width="80">
-          <template #default="{ row }"> ¥{{ Number(row.cost).toFixed(2) }} </template>
+          <template #default="{ row }">¥{{ Number(row.cost).toFixed(2) }}</template>
         </el-table-column>
         <el-table-column prop="project" label="项目" width="120">
           <template #default="{ row }">
@@ -64,9 +65,9 @@
 
       <div class="mt-4 flex justify-end">
         <el-pagination
-          v-model:current-page="pagination.page"
-          v-model:page-size="pagination.pageSize"
-          :total="pagination.total"
+          v-model:current-page="page"
+          v-model:page-size="pageSize"
+          :total="total"
           :page-sizes="[10, 20, 50]"
           layout="total, sizes, prev, pager, next"
           @current-change="loadTasks"
@@ -81,25 +82,31 @@
   import { ElMessage } from 'element-plus'
   import { fetchTaskList } from '@/api/task'
   import {
+    createPaginationBindings,
+    usePagination
+  } from '@/app/email-platform/composables/use-pagination'
+  import {
     getTaskStatusTagType,
     getTaskStatusText
   } from '@/app/email-platform/constants/task-status'
   import { formatDateTime } from '@/app/email-platform/utils/format'
   import { showApiError } from '@/app/email-platform/utils/message'
-  import { usePagination } from '@/app/email-platform/composables/use-pagination'
 
   defineOptions({ name: 'TaskHistory' })
 
   const tasks = ref<Api.Task.TaskItem[]>([])
   const loading = ref(false)
   const filters = reactive({ status: '' })
-  const { pagination, setTotal } = usePagination(20)
+
+  const { pagination, setTotal, resetPage } = usePagination(20)
+  const { page, pageSize, total } = createPaginationBindings(pagination)
 
   const getStatusType = (status: string) => getTaskStatusTagType(status)
   const getStatusText = (status: string) => getTaskStatusText(status)
   const formatTime = (value: string) => formatDateTime(value)
-  const copyText = async (t: string) => {
-    await navigator.clipboard.writeText(t)
+
+  const copyText = async (value: string) => {
+    await navigator.clipboard.writeText(value)
     ElMessage.success('已复制')
   }
 
@@ -107,10 +114,11 @@
     loading.value = true
     try {
       const res = await fetchTaskList({
-        page: pagination.page,
-        pageSize: pagination.pageSize,
+        page: page.value,
+        pageSize: pageSize.value,
         status: filters.status || undefined
       })
+
       tasks.value = res.items || []
       setTotal(res.total)
     } catch (error) {
@@ -118,6 +126,11 @@
     } finally {
       loading.value = false
     }
+  }
+
+  const handleStatusChange = async () => {
+    resetPage()
+    await loadTasks()
   }
 
   onMounted(loadTasks)

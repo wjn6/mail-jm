@@ -1,4 +1,4 @@
-import { reactive } from 'vue'
+import { computed, reactive, type WritableComputedRef, type ComputedRef } from 'vue'
 
 export interface PaginationState {
   page: number
@@ -25,5 +25,35 @@ export function usePagination(defaultPageSize: number = 20) {
     pagination,
     setTotal,
     resetPage
+  }
+}
+
+export interface PaginationBindings {
+  page: WritableComputedRef<number>
+  pageSize: WritableComputedRef<number>
+  total: ComputedRef<number>
+}
+
+export function createPaginationBindings(pagination: PaginationState): PaginationBindings {
+  const page = computed({
+    get: () => pagination.page,
+    set: (value: number) => {
+      pagination.page = value
+    }
+  })
+
+  const pageSize = computed({
+    get: () => pagination.pageSize,
+    set: (value: number) => {
+      pagination.pageSize = value
+    }
+  })
+
+  const total = computed(() => pagination.total)
+
+  return {
+    page,
+    pageSize,
+    total
   }
 }
