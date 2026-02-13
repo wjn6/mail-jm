@@ -6,6 +6,13 @@ import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 
+function parseBooleanFlag(value: string | undefined, fallback: boolean): boolean {
+  if (value === undefined) {
+    return fallback;
+  }
+  return ['1', 'true', 'yes', 'on'].includes(value.trim().toLowerCase());
+}
+
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
@@ -14,34 +21,29 @@ async function bootstrap() {
   const port = configService.get<number>('PORT', 3001);
   const nodeEnv = configService.get<string>('NODE_ENV', 'development');
 
-  // JWT Secret 启动校验
   const jwtSecret = configService.get<string>('JWT_SECRET');
   const jwtAdminSecret = configService.get<string>('JWT_ADMIN_SECRET');
 
   if (!jwtSecret || jwtSecret.includes('your_') || jwtSecret.length < 32) {
     if (nodeEnv === 'production') {
-      throw new Error('生产环境必须设置安全的 JWT_SECRET（至少32位随机字符串）');
+      throw new Error('JWT_SECRET is required and must be at least 32 characters in production.');
     }
-    logger.warn('⚠️ JWT_SECRET 使用了默认占位值，请在生产环境替换为安全的随机字符串');
+    logger.warn('JWT_SECRET is using a placeholder value. Replace it before production deployment.');
   }
 
   if (!jwtAdminSecret || jwtAdminSecret.includes('your_') || jwtAdminSecret.length < 32) {
     if (nodeEnv === 'production') {
-      throw new Error('生产环境必须设置安全的 JWT_ADMIN_SECRET（至少32位随机字符串）');
+      throw new Error('JWT_ADMIN_SECRET is required and must be at least 32 characters in production.');
     }
-    logger.warn('⚠️ JWT_ADMIN_SECRET 使用了默认占位值，请在生产环境替换为安全的随机字符串');
+    logger.warn('JWT_ADMIN_SECRET is using a placeholder value. Replace it before production deployment.');
   }
 
-  // CORS - 生产环境限制来源
   const corsOrigin = configService.get<string>('CORS_ORIGIN');
   app.enableCors({
-    origin: nodeEnv === 'production'
-      ? (corsOrigin ? corsOrigin.split(',') : false)
-      : true,
+    origin: nodeEnv === 'production' ? (corsOrigin ? corsOrigin.split(',') : false) : true,
     credentials: true,
   });
 
-  // 全局管道 - 参数校验
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -50,17 +52,18 @@ async function bootstrap() {
     }),
   );
 
-  // 全局异常过滤器
   app.useGlobalFilters(new HttpExceptionFilter());
-
-  // 全局响应格式化拦截器
   app.useGlobalInterceptors(new TransformInterceptor());
 
-  // Swagger 文档 (仅非生产环境)
-  if (nodeEnv !== 'production') {
+  const swaggerEnabled = parseBooleanFlag(
+    configService.get<string>('SWAGGER_ENABLED'),
+    nodeEnv !== 'production',
+  );
+
+  if (swaggerEnabled) {
     const swaggerConfig = new DocumentBuilder()
-      .setTitle('邮箱接码平台 API')
-      .setDescription('邮箱接码平台后端 API 文档')
+      .setTitle('Email Platform API')
+      .setDescription('Backend API documentation')
       .setVersion('1.0')
       .addBearerAuth()
       .addApiKey({ type: 'apiKey', name: 'x-api-key', in: 'header' }, 'api-key')
@@ -71,9 +74,10 @@ async function bootstrap() {
   }
 
   await app.listen(port);
-  logger.log(`🚀 Server running on http://localhost:${port} [${nodeEnv}]`);
-  if (nodeEnv !== 'production') {
-    logger.log(`📖 Swagger docs: http://localhost:${port}/api-docs`);
+  logger.log(`Server running on http://localhost:${port} [${nodeEnv}]`);
+  if (swaggerEnabled) {
+    logger.log(`Swagger docs: http://localhost:${port}/api-docs`);
   }
 }
+
 bootstrap();

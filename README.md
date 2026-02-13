@@ -50,21 +50,25 @@
 
 ## 快速开始
 
+文档说明：
+- 项目部署与端口说明见 `DEPLOYMENT.md`
+- 上游 GongXi API 参考见 `API_REFERENCE.md`
+
 ### 方式一：Docker Compose（推荐）
 
 ```bash
 # 1. 修改 docker-compose.yml 中的环境变量
 # 2. 启动所有服务
-docker-compose up -d
+docker compose up -d --build
 
 # 3. 初始化数据库
-docker exec email-platform-backend npx prisma migrate deploy
-docker exec email-platform-backend npx ts-node prisma/seed.ts
+# migrate + seed run automatically when backend container starts
 
 # 4. 访问
 # 前端: http://localhost
-# 后端 API: http://localhost:3001
-# Swagger 文档: http://localhost:3001/api-docs
+# 后端 API: http://localhost/auth/login
+# Swagger 文档: http://localhost/api-docs
+# Health: http://localhost/health
 ```
 
 ### 方式二：本地开发

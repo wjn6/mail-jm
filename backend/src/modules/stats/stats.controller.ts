@@ -9,6 +9,15 @@ import { Public } from '../../common/decorators';
 export class StatsController {
   constructor(private statsService: StatsService) {}
 
+  @Public()
+  @Get('health')
+  health() {
+    return {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+    };
+  }
+
   @UseGuards(AdminJwtAuthGuard)
   @ApiBearerAuth()
   @Get('admin/dashboard/stats')

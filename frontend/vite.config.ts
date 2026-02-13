@@ -57,6 +57,10 @@ export default async ({ mode, command }: { mode: string; command: string }) => {
           target: VITE_API_PROXY_URL,
           changeOrigin: true
         },
+        '/health': {
+          target: VITE_API_PROXY_URL,
+          changeOrigin: true
+        },
         '/ws': {
           target: VITE_API_PROXY_URL,
           changeOrigin: true,
