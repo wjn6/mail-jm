@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  # PostgreSQL 数据库
+  postgres:
+    image: postgres:16-alpine
+    container_name: email-platform-db
+    environment:
+      POSTGRES_DB: email_code_platform
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    # 生产环境建议注释掉 ports，仅允许 Docker 内部网络访问
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d email_code_platform"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # Redis 缓存
+  redis:
+    image: redis:7-alpine
+    container_name: email-platform-redis
+    command: redis-server --requirepass ${REDIS_PASSWORD:-redis_password}
+    # 生产环境建议注释掉 ports，仅允许 Docker 内部网络访问
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis_password}", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  # 后端服务
+  backend:
+    build: ./backend
+    container_name: email-platform-backend
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/email_code_platform?schema=public
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_password}
+      # ⚠️ 生产环境必须修改以下 secret，否则后端将拒绝启动
+      JWT_SECRET: ${JWT_SECRET:-your_jwt_secret_key_at_least_32_chars_long!!}
+      JWT_ADMIN_SECRET: ${JWT_ADMIN_SECRET:-your_admin_jwt_secret_at_least_32_chars!!}
+      DEFAULT_ADMIN_PASSWORD: ${DEFAULT_ADMIN_PASSWORD:-admin123456}
+      GONGXI_BASE_URL: ${GONGXI_BASE_URL:-http://host.docker.internal:3000}
+      GONGXI_API_KEY: ${GONGXI_API_KEY:-sk_your_gongxi_api_key}
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # 前端服务
+  frontend:
+    build: ./frontend
+    container_name: email-platform-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:

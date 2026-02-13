@@ -1,0 +1,226 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ========================
+// 用户相关
+// ========================
+
+model User {
+  id           Int       @id @default(autoincrement())
+  username     String    @unique @db.VarChar(50)
+  email        String    @unique @db.VarChar(255)
+  passwordHash String    @map("password_hash") @db.VarChar(255)
+  status       String    @default("ACTIVE") @db.VarChar(20) // ACTIVE, DISABLED
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  wallet       Wallet?
+  projects     Project[]
+  transactions Transaction[]
+  emailTasks   EmailTask[]
+
+  @@map("users")
+}
+
+model Wallet {
+  id            Int      @id @default(autoincrement())
+  userId        Int      @unique @map("user_id")
+  balance       Decimal  @default(0) @db.Decimal(12, 4)
+  frozenBalance Decimal  @default(0) @map("frozen_balance") @db.Decimal(12, 4)
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("wallets")
+}
+
+model Transaction {
+  id            Int      @id @default(autoincrement())
+  userId        Int      @map("user_id")
+  type          String   @db.VarChar(20) // RECHARGE, CONSUME, REFUND, ADJUST, FREEZE, UNFREEZE
+  amount        Decimal  @db.Decimal(12, 4)
+  balanceBefore Decimal  @map("balance_before") @db.Decimal(12, 4)
+  balanceAfter  Decimal  @map("balance_after") @db.Decimal(12, 4)
+  description   String?  @db.VarChar(500)
+  refNo         String?  @map("ref_no") @db.VarChar(100)
+  relatedTaskId Int?     @map("related_task_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("transactions")
+}
+
+// ========================
+// 项目与 API Key
+// ========================
+
+model Project {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  name      String   @db.VarChar(100)
+  status    String   @default("ACTIVE") @db.VarChar(20) // ACTIVE, DISABLED
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  apiKeys   ApiKey[]
+  emailTasks EmailTask[]
+
+  @@index([userId])
+  @@map("projects")
+}
+
+model ApiKey {
+  id        Int       @id @default(autoincrement())
+  projectId Int       @map("project_id")
+  name      String    @db.VarChar(100)
+  keyHash   String    @map("key_hash") @db.VarChar(255)
+  keyPrefix String    @map("key_prefix") @db.VarChar(20)
+  rateLimit Int       @default(60) @map("rate_limit")
+  status    String    @default("ACTIVE") @db.VarChar(20) // ACTIVE, DISABLED
+  expiresAt DateTime? @map("expires_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  project    Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  emailTasks EmailTask[]
+
+  @@index([keyHash])
+  @@index([projectId])
+  @@map("api_keys")
+}
+
+// ========================
+// 接码任务
+// ========================
+
+model EmailTask {
+  id            Int       @id @default(autoincrement())
+  userId        Int       @map("user_id")
+  projectId     Int?      @map("project_id")
+  apiKeyId      Int?      @map("api_key_id")
+  upstreamId    Int?      @map("upstream_id")
+  email         String    @db.VarChar(255) // 分配给用户的邮箱地址
+  status        String    @default("PENDING") @db.VarChar(20)
+  // 状态: PENDING -> ACTIVE -> COMPLETED / EXPIRED / RELEASED / FAILED
+  cost          Decimal   @default(0) @db.Decimal(12, 4)
+  upstreamEmail String?   @map("upstream_email") @db.VarChar(255)
+  verifyCode    String?   @map("verify_code") @db.VarChar(50)
+  mailSubject   String?   @map("mail_subject") @db.VarChar(500)
+  mailContent   String?   @map("mail_content") @db.Text
+  matchPattern  String?   @map("match_pattern") @db.VarChar(200)
+  expireAt      DateTime? @map("expire_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  completedAt   DateTime? @map("completed_at")
+
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project  Project?        @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  apiKey   ApiKey?         @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
+  upstream UpstreamSource? @relation(fields: [upstreamId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([email])
+  @@index([status])
+  @@index([createdAt])
+  @@map("email_tasks")
+}
+
+// ========================
+// 上游邮箱源
+// ========================
+
+model UpstreamSource {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique @db.VarChar(100)
+  type      String   @db.VarChar(30) // gongxi, custom
+  baseUrl   String   @map("base_url") @db.VarChar(500)
+  apiKey    String   @map("api_key") @db.VarChar(500)
+  status    String   @default("ACTIVE") @db.VarChar(20) // ACTIVE, DISABLED, ERROR
+  config    Json?    @default("{}")
+  priority  Int      @default(0) // 优先级，越大越优先
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  emailTasks EmailTask[]
+
+  @@map("upstream_sources")
+}
+
+// ========================
+// 管理员
+// ========================
+
+model Admin {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique @db.VarChar(50)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  role         String   @default("ADMIN") @db.VarChar(20) // SUPER_ADMIN, ADMIN
+  status       String   @default("ACTIVE") @db.VarChar(20)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  logs AdminLog[]
+
+  @@map("admins")
+}
+
+model AdminLog {
+  id         Int      @id @default(autoincrement())
+  adminId    Int      @map("admin_id")
+  action     String   @db.VarChar(50)
+  targetType String?  @map("target_type") @db.VarChar(50)
+  targetId   Int?     @map("target_id")
+  detail     Json?
+  ip         String?  @db.VarChar(50)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([createdAt])
+  @@map("admin_logs")
+}
+
+// ========================
+// 计费规则
+// ========================
+
+model PricingRule {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(100)
+  type        String   @db.VarChar(30) // PER_USE（按次）, PACKAGE（包月）
+  price       Decimal  @db.Decimal(12, 4) // 单价
+  description String?  @db.VarChar(500)
+  isDefault   Boolean  @default(false) @map("is_default")
+  status      String   @default("ACTIVE") @db.VarChar(20)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("pricing_rules")
+}
+
+// ========================
+// 系统公告
+// ========================
+
+model Announcement {
+  id        Int      @id @default(autoincrement())
+  title     String   @db.VarChar(200)
+  content   String   @db.Text
+  type      String   @default("INFO") @db.VarChar(20) // INFO, WARNING, IMPORTANT
+  status    String   @default("ACTIVE") @db.VarChar(20) // ACTIVE, DISABLED
+  pinned    Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("announcements")
+}
