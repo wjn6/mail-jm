@@ -450,8 +450,18 @@ export class AdminService {
     detail?: unknown,
     ip?: string,
   ) {
+    type AdminLogCreateArg = Parameters<typeof this.prisma.adminLog.create>[0];
+    type AdminLogDetail = AdminLogCreateArg extends { data: { detail?: infer D } } ? D : unknown;
+
     await this.prisma.adminLog.create({
-      data: { adminId, action, targetType, targetId, detail, ip },
+      data: {
+        adminId,
+        action,
+        targetType,
+        targetId,
+        detail: detail as AdminLogDetail,
+        ip,
+      },
     });
   }
 
