@@ -33,33 +33,10 @@ export default async ({ mode, command }: { mode: string; command: string }) => {
     server: {
       port: Number(VITE_PORT),
       proxy: {
-        '/auth': {
+        '/api': {
           target: VITE_API_PROXY_URL,
-          changeOrigin: true
-        },
-        '/user': {
-          target: VITE_API_PROXY_URL,
-          changeOrigin: true
-        },
-        '/admin': {
-          target: VITE_API_PROXY_URL,
-          changeOrigin: true
-        },
-        '/gateway': {
-          target: VITE_API_PROXY_URL,
-          changeOrigin: true
-        },
-        '/public': {
-          target: VITE_API_PROXY_URL,
-          changeOrigin: true
-        },
-        '/api-docs': {
-          target: VITE_API_PROXY_URL,
-          changeOrigin: true
-        },
-        '/health': {
-          target: VITE_API_PROXY_URL,
-          changeOrigin: true
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api/, '')
         },
         '/ws': {
           target: VITE_API_PROXY_URL,

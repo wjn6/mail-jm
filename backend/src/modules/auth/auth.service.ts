@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ConflictException, Logger } from '@nestjs/common';
+﻿import { Injectable, UnauthorizedException, ConflictException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
@@ -92,33 +92,50 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
-    const user = await this.prisma.user.findUnique({
-      where: { username: dto.username },
-    });
+    const [admin, user] = await Promise.all([
+      this.prisma.admin.findUnique({ where: { username: dto.username } }),
+      this.prisma.user.findUnique({ where: { username: dto.username } }),
+    ]);
 
-    if (!user) {
-      throw new UnauthorizedException('用户名或密码错误');
+    if (admin && admin.status === 'ACTIVE') {
+      const isAdminPasswordValid = await bcrypt.compare(dto.password, admin.passwordHash);
+      if (isAdminPasswordValid) {
+        const token = this.generateAdminToken(admin.id, admin.username, admin.role);
+        return {
+          sessionType: 'admin' as const,
+          token,
+          admin: {
+            id: admin.id,
+            username: admin.username,
+            role: admin.role,
+          },
+        };
+      }
     }
 
-    if (user.status !== 'ACTIVE') {
-      throw new UnauthorizedException('账户已被禁用');
+    if (user && user.status === 'ACTIVE') {
+      const isUserPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
+      if (isUserPasswordValid) {
+        const token = this.generateUserToken(user.id, user.username);
+        return {
+          sessionType: 'user' as const,
+          token,
+          user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+          },
+        };
+      }
     }
 
-    const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('用户名或密码错误');
+    const hasDisabledAccount =
+      (admin && admin.status !== 'ACTIVE') || (user && user.status !== 'ACTIVE');
+    if (hasDisabledAccount) {
+      throw new UnauthorizedException('账号已禁用');
     }
 
-    const token = this.generateUserToken(user.id, user.username);
-
-    return {
-      token,
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-      },
-    };
+    throw new UnauthorizedException('用户名或密码错误');
   }
 
   async getMe(userId: number) {
@@ -233,3 +250,4 @@ export class AuthService {
     );
   }
 }
+

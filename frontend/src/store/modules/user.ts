@@ -208,10 +208,6 @@ export const useUserStore = defineStore(
      * 如果是同一账号重新登录，保留工作台标签页
      */
     const logOut = () => {
-      const isAdmin =
-        sessionType.value === 'admin' ||
-        !!info.value.roles?.some((role) => role === 'R_ADMIN' || role === 'R_SUPER')
-
       // 保存当前用户 ID，用于下次登录时判断是否为同一用户
       const currentUserId = info.value.userId
       if (currentUserId) {
@@ -242,10 +238,9 @@ export const useUserStore = defineStore(
       resetRouterState(500)
       // 跳转到登录页，携带当前路由作为 redirect 参数
       const currentRoute = router.currentRoute.value
-      const loginRouteName = isAdmin ? 'AdminLogin' : 'Login'
-      const redirect = currentRoute.name !== loginRouteName ? currentRoute.fullPath : undefined
+      const redirect = currentRoute.name !== 'Login' ? currentRoute.fullPath : undefined
       router.push({
-        name: loginRouteName,
+        name: 'Login',
         query: redirect ? { redirect } : undefined
       })
     }

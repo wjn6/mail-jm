@@ -172,9 +172,8 @@ function handleLoginStatus(
   }
 
   // 未登录且访问需要权限的页面，按目标路径跳转到对应登录页
-  const loginRouteName = isAdminPath(to.path) ? 'AdminLogin' : 'Login'
   next({
-    name: loginRouteName,
+    name: 'Login',
     query: { redirect: to.fullPath }
   })
   return false

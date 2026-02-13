@@ -33,7 +33,7 @@ export const staticRoutes: AppRouteRecordRaw[] = [
   {
     path: '/auth/admin-login',
     name: 'AdminLogin',
-    component: () => import('@views/auth/admin-login/index.vue'),
+    component: () => import('@views/auth/login/index.vue'),
     meta: { title: '管理员登录', isHideTab: true }
   },
   {

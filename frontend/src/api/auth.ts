@@ -11,7 +11,7 @@ interface AdminProfileResponse {
 // ===== 用户认证 =====
 
 export function fetchLogin(params: Api.Auth.LoginParams) {
-  return request.post<Api.Auth.LoginResponse>({
+  return request.post<Api.Auth.UnifiedLoginResponse>({
     url: '/auth/login',
     params
   })

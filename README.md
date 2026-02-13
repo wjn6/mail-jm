@@ -57,18 +57,17 @@
 ### 方式一：Docker Compose（推荐）
 
 ```bash
-# 1. 修改 docker-compose.yml 中的环境变量
-# 2. 启动所有服务
+# 1. 可选：复制环境变量模板
+# cp .env.example .env
+
+# 2. 启动所有服务（后端会自动初始化库表并执行 seed）
 docker compose up -d --build
 
-# 3. 初始化数据库
-# migrate + seed run automatically when backend container starts
-
-# 4. 访问
+# 3. 访问
 # 前端: http://localhost
-# 后端 API: http://localhost/auth/login
-# Swagger 文档: http://localhost/api-docs
-# Health: http://localhost/health
+# 后端 API: http://localhost:3001/auth/login
+# Swagger 文档: http://localhost:3001/api-docs
+# Health: http://localhost:3001/health
 ```
 
 ### 方式二：本地开发

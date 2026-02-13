@@ -1,5 +1,4 @@
-<!-- 登录页面 -->
-<template>
+﻿<template>
   <div class="flex w-full h-screen">
     <LoginLeftView />
 
@@ -8,13 +7,13 @@
 
       <div class="auth-right-wrap">
         <div class="form">
-          <h3 class="title">邮箱接码平台</h3>
-          <p class="sub-title">登录您的账号以继续</p>
+          <h3 class="title">统一登录</h3>
+          <p class="sub-title">用户和管理员都在这里登录</p>
+
           <ElForm
             ref="formRef"
             :model="formData"
             :rules="rules"
-            :key="formKey"
             @keyup.enter="handleSubmit"
             style="margin-top: 25px"
           >
@@ -26,6 +25,7 @@
                 prefix-icon="User"
               />
             </ElFormItem>
+
             <ElFormItem prop="password">
               <ElInput
                 class="custom-height"
@@ -38,7 +38,6 @@
               />
             </ElFormItem>
 
-            <!-- 推拽验证 -->
             <div class="relative pb-5 mt-6">
               <div
                 class="relative z-[2] overflow-hidden select-none rounded-lg border border-transparent tad-300"
@@ -47,7 +46,7 @@
                 <ArtDragVerify
                   ref="dragVerify"
                   v-model:value="isPassing"
-                  text="请拖动滑块验证"
+                  text="向右拖动滑块完成验证"
                   textColor="var(--art-gray-700)"
                   successText="验证通过"
                   :progressBarBg="getCssVar('--el-color-primary')"
@@ -59,7 +58,7 @@
                 class="absolute top-0 z-[1] px-px mt-2 text-xs text-[#f56c6c] tad-300"
                 :class="{ 'translate-y-10': !isPassing && isClickPass }"
               >
-                请完成滑块验证
+                请先完成滑块验证
               </p>
             </div>
 
@@ -75,15 +74,13 @@
                 :loading="loading"
                 v-ripple
               >
-                登 录
+                立即登录
               </ElButton>
             </div>
 
             <div class="mt-5 text-sm text-gray-600">
-              <span>还没有账号？</span>
-              <RouterLink class="text-theme" :to="{ name: 'Register' }">立即注册</RouterLink>
-              <span class="mx-2">|</span>
-              <RouterLink class="text-theme" :to="{ name: 'AdminLogin' }">管理员登录</RouterLink>
+              <span>没有账号？</span>
+              <RouterLink class="text-theme" :to="{ name: 'Register' }">去注册</RouterLink>
             </div>
           </ElForm>
         </div>
@@ -96,6 +93,7 @@
   import { useUserStore } from '@/store/modules/user'
   import { getCssVar } from '@/utils/ui'
   import { HttpError } from '@/utils/http/error'
+  import { ApiStatus } from '@/utils/http/status'
   import { fetchLogin } from '@/api/auth'
   import { ElNotification, type FormInstance, type FormRules } from 'element-plus'
   import { useSettingStore } from '@/store/modules/setting'
@@ -104,7 +102,6 @@
 
   const settingStore = useSettingStore()
   const { isDark } = storeToRefs(settingStore)
-  const formKey = ref(0)
 
   const dragVerify = ref()
   const userStore = useUserStore()
@@ -114,6 +111,7 @@
   const isClickPass = ref(false)
 
   const formRef = ref<FormInstance>()
+  const loading = ref(false)
 
   const formData = reactive({
     username: '',
@@ -126,9 +124,6 @@
     password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
   }))
 
-  const loading = ref(false)
-
-  // 登录
   const handleSubmit = async () => {
     if (!formRef.value) return
 
@@ -144,37 +139,69 @@
       loading.value = true
 
       const { username, password } = formData
-
       const result = await fetchLogin({ username, password })
 
       if (!result.token) {
-        throw new Error('登录失败 - 未收到 token')
+        throw new HttpError('登录失败：缺少 token', ApiStatus.error)
       }
 
-      // 存储 token 和登录状态
-      userStore.setUserSession(result.token, {
-        userId: result.user.id,
-        userName: result.user.username,
-        username: result.user.username,
-        email: result.user.email,
-        id: result.user.id,
-        status: 'ACTIVE',
-        balance: 0,
-        createdAt: '',
-        roles: ['R_USER'],
-        buttons: []
-      })
+      const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : ''
+      let defaultPath = '/'
+      let displayName = username
+      let loginRoleLabel = '用户'
 
-      showLoginSuccessNotice()
+      if (result.sessionType === 'admin' || result.admin) {
+        if (!result.admin) {
+          throw new HttpError('登录失败：管理员信息缺失', ApiStatus.error)
+        }
 
-      const redirect = route.query.redirect as string
-      router.push(redirect || '/')
-    } catch (error) {
-      if (error instanceof HttpError) {
-        // 错误已由 HTTP 层处理
+        const roleMapping: Record<string, string> = {
+          SUPER_ADMIN: 'R_SUPER',
+          ADMIN: 'R_ADMIN'
+        }
+
+        userStore.setAdminSession(result.token, {
+          userId: result.admin.id,
+          userName: result.admin.username,
+          username: result.admin.username,
+          email: '',
+          id: result.admin.id,
+          status: 'ACTIVE',
+          balance: 0,
+          createdAt: '',
+          roles: [roleMapping[result.admin.role] || 'R_ADMIN'],
+          buttons: []
+        })
+
+        defaultPath = '/admin-panel/dashboard'
+        displayName = result.admin.username
+        loginRoleLabel = '管理员'
       } else {
-        console.error('[Login] Unexpected error:', error)
+        if (!result.user) {
+          throw new HttpError('登录失败：用户信息缺失', ApiStatus.error)
+        }
+
+        userStore.setUserSession(result.token, {
+          userId: result.user.id,
+          userName: result.user.username,
+          username: result.user.username,
+          email: result.user.email,
+          id: result.user.id,
+          status: 'ACTIVE',
+          balance: 0,
+          createdAt: '',
+          roles: ['R_USER'],
+          buttons: []
+        })
+
+        displayName = result.user.username
       }
+
+      showLoginSuccessNotice(loginRoleLabel, displayName)
+      router.push(redirect || defaultPath)
+    } catch (error) {
+      if (error instanceof HttpError) return
+      console.error('[Login] Unexpected error:', error)
     } finally {
       loading.value = false
       resetDragVerify()
@@ -185,16 +212,16 @@
     dragVerify.value?.reset()
   }
 
-  const showLoginSuccessNotice = () => {
+  const showLoginSuccessNotice = (roleLabel: string, username: string) => {
     setTimeout(() => {
       ElNotification({
         title: '登录成功',
         type: 'success',
         duration: 2500,
         zIndex: 10000,
-        message: '欢迎回来！'
+        message: `${roleLabel} ${username}，欢迎回来`
       })
-    }, 1000)
+    }, 300)
   }
 </script>
 

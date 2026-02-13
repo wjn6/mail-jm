@@ -6,31 +6,33 @@
 ## 1. 推荐方式：Docker Compose
 
 ```bash
+# 可选：复制模板后按需修改
+# cp .env.example .env
+
 docker compose up -d --build
 ```
 
 说明：
-- 后端容器启动时会自动执行 `prisma migrate deploy` 和 `seed`。
+- 后端容器启动时会自动初始化数据库结构（优先 `prisma migrate deploy`，无 migration 时回退 `prisma db push`）并执行 `seed`。
 - 不需要再手动执行 `docker exec ... migrate/seed`。
 
-## 2. 访问地址（统一入口）
+## 2. 访问地址（本地常用）
 
 - 前端：`http://localhost`
-- Swagger：`http://localhost/api-docs`
-- Health：`http://localhost/health`
+- 后端 API：`http://localhost:3001/auth/login`
+- Swagger：`http://localhost:3001/api-docs`
+- Health：`http://localhost:3001/health`
 
 说明：
-- 前端 Nginx 统一反向代理后端接口。
-- 后端容器内部端口为 `3001`，默认不直接暴露到宿主机。
+- 前端 Nginx 仍可反向代理后端接口。
+- 如果你更习惯统一入口，也可使用 `http://localhost/api-docs`、`http://localhost/health`。
 
 ## 3. 端口说明
 
 - `80`：前端入口（对外）
-- `3001`：后端服务（容器内）
-- `5432`：PostgreSQL（当前 compose 对外暴露）
-- `6379`：Redis（当前 compose 对外暴露）
-
-如果你希望更安全，可以把 `5432/6379` 也改为仅容器内访问。
+- `3001`：后端服务（对外，便于本地直连调试）
+- `5432`：PostgreSQL（仅容器内访问，不对外暴露）
+- `6379`：Redis（仅容器内访问，不对外暴露）
 
 ## 4. 关键环境变量
 

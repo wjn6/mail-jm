@@ -30,3 +30,6 @@ backend/prisma/migrations/
 # Generated
 backend/dist/
 frontend/dist/
+# WindsurfChatOpen
+.windsurfchatopen/
+.windsurfrules

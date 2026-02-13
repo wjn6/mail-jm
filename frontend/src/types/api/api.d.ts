@@ -32,6 +32,20 @@ declare namespace Api {
         email: string
       }
     }
+    interface UnifiedLoginResponse {
+      sessionType?: 'user' | 'admin'
+      token: string
+      user?: {
+        id: number
+        username: string
+        email: string
+      }
+      admin?: {
+        id: number
+        username: string
+        role: string
+      }
+    }
     interface AdminLoginParams {
       username: string
       password: string
